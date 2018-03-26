@@ -1,0 +1,9 @@
+Bundle-Name: book-api
+Bundle-SymbolicName: com.proliferay.book.api
+Bundle-Version: 1.0.0-SNAPSHOT
+Export-Package:\
+	com.proliferay.book.exception,\
+	com.proliferay.book.model,\
+	com.proliferay.book.service,\
+	com.proliferay.book.service.persistence
+-includeresource: META-INF/service.xml=../book-service/service.xml

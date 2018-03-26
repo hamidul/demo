@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<model-hints>
+	<model name="com.proliferay.book.model.Book">
+		<field name="bookId" type="long" />
+		<field name="bookName" type="String" />
+		<field name="description" type="String" />
+		<field name="authorName" type="String" />
+		<field name="isbn" type="int" />
+		<field name="price" type="int" />
+	</model>
+</model-hints>

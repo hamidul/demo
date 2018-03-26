@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.0.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_0_0.dtd">
+
+<service-builder package-path="com.proliferay.book">
+	<author>Hamidul Islam</author>
+	<namespace>BOOK</namespace>
+	<entity name="Book" table="BOOK_PORTLET" local-service="true" remote-service="true">
+		<column name="bookId" type="long" primary="true" id-type="increment"/>
+		<column name="bookName" type="String" />
+		<column name="description" type="String" />
+		<column name="authorName" type="String" />
+		<column name="isbn" type="int" />
+		<column name="price" type="int" />
+		<order by="desc" >
+			<order-column name="bookId"/>
+		</order>
+	</entity>
+</service-builder>

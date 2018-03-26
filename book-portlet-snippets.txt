@@ -1,0 +1,557 @@
+Step 1: 
+1. Create views directory under resources folder and moves all the jsp to the views folder 
+2. change "javax.portlet.init-param.view-template=/view.jsp", to "javax.portlet.init-param.view-template=/book-portlet/view.jsp",
+
+
+Step 2: 
+
+1. Add  <a href="#">Add Book</a> in view.jsp 
+
+2. update view.jsp with below 
+
+<%@ include file="../init.jsp" %>
+
+<portlet:renderURL var="viewaddPageURL">
+	<portlet:param name="jspPage" value="/book-portlet/add_book.jsp"/>
+</portlet:renderURL>
+
+<a href="<%=viewaddPageURL.toString()%>">Add Book</a>
+
+Step 3: Add below content in add_book.jsp 
+
+<portlet:renderURL windowState="normal" var="backURL">
+  <portlet:param name="jspPage" value="/book-portlet/view.jsp"></portlet:param>
+</portlet:renderURL>
+
+<liferay-ui:header
+    backURL="<%= backURL %>"
+    title="Back"
+/>
+
+also add below 
+
+<aui:form name="fm"  method="post">
+
+	<aui:input name="bookName" label="Book Name"/>
+	<aui:input type="textarea" name="description" label="Description"/>
+	<aui:input name="authorName" label="Author Name"/>
+	<aui:input name="isbn" label="ISBN">
+		 <aui:validator name="digits"/>
+	</aui:input>
+	<aui:input name="price" label="Price">
+		 <aui:validator name="digits"/>
+	</aui:input>
+	<aui:button-row>
+        <aui:button name="addBook" type="submit" value="Add Book"  />
+    </aui:button-row>
+		
+</aui:form>
+
+add below in add_book.jsp 
+
+<portlet:actionURL name="addBook" var="addBookURL" /> and update form with form action like this 
+
+<aui:form name="fm" action="<%=addBookURL.toString()%>" method="post">
+
+
+
+Step 4: add below in BookPortlet.java 
+
+private static final Log _log = LogFactoryUtil.getLog(BookPortlet.class);
+
+add below method 
+
+@ProcessAction(name = "addBook")
+	public void addBook(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException {
+		
+	   _log.info("#################Add Book Method Called#########################");
+	}
+------------------------------------------------------------------------
+create a new liferay module with service builder template. Give the project name as  book
+
+enter the package name com.proliferay.book
+
+change the service.xml with below 
+
+<?xml version="1.0"?>
+<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.0.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_0_0.dtd">
+
+<service-builder package-path="com.proliferay.book">
+	<author>Hamidul Islam</author>
+	<namespace>BOOK</namespace>
+	<entity name="Book" table="BOOK_PORTLET" local-service="true" remote-service="true">
+		<column name="bookId" type="long" primary="true" id-type="increment"/>
+		<column name="bookName" type="String" />
+		<column name="description" type="String" />
+		<column name="authorName" type="String" />
+		<column name="isbn" type="int" />
+		<column name="price" type="int" />
+	</entity>
+</service-builder>
+
+and build the service 
+
+------------------------------------------------
+
+Add below dependency in book portlet 
+
+<dependency>
+	<groupId>com.proliferay.book</groupId>
+	<artifactId>book-api</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+</dependency>
+<dependency>
+	<groupId>com.proliferay.book</groupId>
+	<artifactId>book-service</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+</dependency>
+
+------------------------------------------------------------
+
+ActionUtil.java with below content 
+
+package com.proliferay.book.util;
+
+import javax.portlet.ActionRequest;
+
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.proliferay.book.model.Book;
+import com.proliferay.book.model.impl.BookImpl;
+
+public class ActionUtil {
+
+	  public static Book bookFromRequest(ActionRequest request) {
+		  Book book = new BookImpl();
+		  book.setAuthorName(ParamUtil.getString(request, "authorName",""));
+		  book.setBookName(ParamUtil.getString(request, "bookName",""));
+		  book.setIsbn(ParamUtil.getInteger(request, "isbn",0));
+		  book.setPrice(ParamUtil.getInteger(request, "price",0));
+		  book.setDescription(ParamUtil.getString(request, "description",""));
+		
+		  return book;
+	  }
+}
+------------------------------------------------------------------------
+
+
+Change addBook() process action as below 
+
+@ProcessAction(name = "addBook")
+	public void addBook(ActionRequest actionRequest, ActionResponse actionResponse) throws SystemException {
+		Book book = ActionUtil.bookFromRequest(actionRequest);
+
+		// Calling service method to persist book.
+		BookLocalServiceUtil.addBook(book);
+		_log.info("#################Added Book Successfully#########################");
+	}
+	
+-------------------------------------------------------------------------------------------------
+Update view.jsp 
+
+<%@page import="com.proliferay.book.model.Book"%>
+<%@page import="java.util.List"%>
+<%@page import="com.liferay.portal.kernel.dao.orm.QueryUtil"%>
+<%@page import="com.proliferay.book.service.BookLocalServiceUtil"%>
+<%@ include file="../init.jsp" %>
+
+<%
+List<Book> bookList = BookLocalServiceUtil.getBooks(QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+%>
+
+<portlet:renderURL var="viewaddPageURL">
+	<portlet:param name="jspPage" value="/book-portlet/add_book.jsp"/>
+</portlet:renderURL>
+
+<a href="<%=viewaddPageURL.toString()%>">Add Book</a>
+
+<table border="1">
+<tr>
+	<th>
+		Book Name
+	</th>
+	<th>
+		Author Name
+	</th>
+	<th>
+		Price
+	</th>
+</tr>
+<c:forEach items="<%=bookList %>" var="book">
+ 		<tr>
+ 			<td><c:out value="${book.bookName}"/></td>
+ 			<td><c:out value="${book.authorName}"/></td>
+ 			<td><c:out value="${book.price}"/></td>
+ 		</tr>
+	</c:forEach>
+</table>
+--------------------------------------------------------------------------------
+Update view.jsp with search container 
+
+
+<%@ include file="../init.jsp" %>
+
+
+<portlet:renderURL var="viewaddPageURL">
+	<portlet:param name="jspPage" value="/book-portlet/add_book.jsp"/>
+</portlet:renderURL>
+
+<a href="<%=viewaddPageURL.toString()%>">Add Book</a>
+
+<liferay-ui:search-container>
+	<liferay-ui:search-container-results 
+		results="<%= BookLocalServiceUtil.getBooks(searchContainer.getStart(), searchContainer.getEnd()) %>" 
+	/>
+	
+	<liferay-ui:search-container-row
+		className="com.proliferay.book.model.Book"
+		modelVar="aBook"
+	>
+	<liferay-ui:search-container-column-text property="authorName" name="Author Name"/> 
+	
+	<liferay-ui:search-container-column-text property="bookName" name="Book Name"/> 
+	
+	<liferay-ui:search-container-column-text property="isbn" name="ISBN"/> 
+	
+	<liferay-ui:search-container-column-text property="price" name="Price"/> 
+	
+	
+	</liferay-ui:search-container-row>
+
+
+<liferay-ui:search-iterator />
+
+</liferay-ui:search-container>
+
+
+add 
+
+<liferay-ui:search-container-column-jsp path="/book-portlet/actions.jsp" align="right"/>
+
+
+and create actions.jsp under book-portlet with content actions 
+
+
+-------------------------------------------------------------------
+update actions.jsp 
+
+<%@ include file="../init.jsp" %>
+
+<liferay-ui:icon-menu>
+	<liferay-ui:icon image="view"/>
+	<liferay-ui:icon image="edit"/>
+	<liferay-ui:icon-delete image="delete" url=""/>
+</liferay-ui:icon-menu>
+
+--------------------------------------------------------------------
+
+add a new fileview_book.jsp with below content 
+
+<%@ include file="../init.jsp" %>
+
+
+view book
+
+---------------------------------------------------------
+
+Update actions.jsp as 
+
+<%@ include file="../init.jsp" %>
+
+<liferay-ui:icon-menu>
+	<portlet:actionURL name="viewBook" var="viewURL">
+	</portlet:actionURL>
+	<liferay-ui:icon image="view" url="<%=viewURL.toString() %>"/>
+	<liferay-ui:icon image="edit"/>
+	<liferay-ui:icon-delete url=""/>
+</liferay-ui:icon-menu>
+
+-----------------------------------------------
+
+Add new method in BookPortlet.java 
+
+
+@ProcessAction(name = "viewBook")
+	public void viewBook(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+		
+		actionResponse.setRenderParameter("jspPage", "/book-portlet/view_book.jsp");
+	}
+----------------------------------------
+
+Update view_book.jsp 
+
+<%@ include file="../init.jsp" %>
+
+<portlet:renderURL var="backURL">
+	<portlet:param name="jspPage" value="/book-portlet/view.jsp"/>
+</portlet:renderURL>
+
+<liferay-ui:header backURL="<%=backURL%>" title="Back" />
+
+view book
+
+---------------------------------------------
+
+update actions.jsp 
+
+<%@page import="com.liferay.portal.kernel.util.WebKeys"%>
+<%@page import="com.liferay.portal.kernel.dao.search.ResultRow"%>
+<%@ include file="../init.jsp" %>
+
+<%
+	ResultRow row = (ResultRow) request.getAttribute(WebKeys.SEARCH_CONTAINER_RESULT_ROW);
+	Book book = (Book) row.getObject();
+%>
+
+
+<liferay-ui:icon-menu>
+	<portlet:actionURL name="viewBook" var="viewURL">
+		<portlet:param name="bookId" value="<%=String.valueOf(book.getBookId()) %>"/> 
+	</portlet:actionURL>
+	<liferay-ui:icon image="view" url="<%=viewURL.toString() %>"/>
+	
+	<liferay-ui:icon image="edit"/>
+	
+	<liferay-ui:icon-delete url=""/>
+</liferay-ui:icon-menu>
+
+
+---------------------------------------------------------------
+
+update viewBook method 
+
+@ProcessAction(name = "viewBook")
+	public void viewBook(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+		
+		long bookId = ParamUtil.getLong(actionRequest, "bookId");
+		Book book = BookLocalServiceUtil.getBook(bookId);
+		actionRequest.setAttribute("bookEntry", book);
+		
+		actionResponse.setRenderParameter("jspPage", "/book-portlet/view_book.jsp");
+	}
+-------------------------------------------------------------------------------------------
+update view_book.jsp 
+
+<%@ include file="../init.jsp" %>
+
+
+<portlet:renderURL var="backURL">
+	<portlet:param name="jspPage" value="/book-portlet/view.jsp"/>
+</portlet:renderURL>
+
+<liferay-ui:header backURL="<%=backURL%>" title="Back" />
+
+<%
+	Book book = (Book) request.getAttribute("bookEntry");
+%>
+
+
+view book
+
+-------------------------------------------------------------------------------
+
+update view_book.jsp 
+
+<%@ include file="../init.jsp" %>
+
+
+<portlet:renderURL var="backURL">
+	<portlet:param name="jspPage" value="/book-portlet/view.jsp"/>
+</portlet:renderURL>
+
+<liferay-ui:header backURL="<%=backURL%>" title="Back" />
+
+<%
+	Book book = (Book) request.getAttribute("bookEntry");
+%>
+
+
+<aui:form>
+	<aui:model-context bean="<%=book%>" model="<%=Book.class%>" />
+	<aui:input name="bookName" label="Book Name" disabled="true"/>
+	<aui:input type="textarea" name="description" label="Description" disabled="true"/>
+	<aui:input name="authorName" label="Author Name" disabled="true"/>
+	<aui:input name="isbn" label="ISBN" disabled="true"/>
+	<aui:input name="price" label="Price" disabled="true"/>		
+</aui:form>
+
+------------------------------------------------------------------------
+
+update actions.jsp 
+
+<portlet:actionURL  var="editBookURL" name="viewEdit">
+		
+	</portlet:actionURL>
+	
+	<liferay-ui:icon image="edit" url="<%=editBookURL.toString() %>"/> 
+	
+add new method 
+
+@ProcessAction(name = "viewEdit")
+	public void viewEdit(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+		
+		actionResponse.setRenderParameter("jspPage", "/book-portlet/edit_book.jsp");
+	
+			
+	}
+	
+add new jsp edit_book.jsp under book-portlet with below content 
+
+<%@ include file="../init.jsp" %>
+
+<portlet:renderURL windowState="normal" var="backURL">
+  <portlet:param name="jspPage" value="/book-portlet/view.jsp"></portlet:param>
+</portlet:renderURL>
+
+
+<liferay-ui:header
+    backURL="<%= backURL %>"
+    title="Back"
+/>
+
+
+Edit Book
+
+--------------------------------------------------------------------------
+
+update actions.jsp 
+
+<portlet:actionURL  var="editBookURL" name="viewEdit">
+		<portlet:param name="bookId"	value="<%=String.valueOf(book.getBookId())%>" />
+	</portlet:actionURL>
+	
+	<liferay-ui:icon image="edit" url="<%=editBookURL.toString() %>"/> 
+	
+	
+and viewEdit()
+
+@ProcessAction(name = "viewEdit")
+public void viewEdit(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+	
+	long bookId = ParamUtil.getLong(actionRequest, "bookId",0);
+	Book book = BookLocalServiceUtil.getBook(bookId);
+	actionRequest.setAttribute("book", book); 
+
+	actionResponse.setRenderParameter("jspPage", "/book-portlet/edit_book.jsp");
+
+		
+}
+
+
+-----------------------------------------------------------------------------------------------------------
+
+Update edit_book.jsp 
+
+<%@ include file="../init.jsp" %>
+
+<%
+	Book book = (Book) request.getAttribute("book");
+%>
+
+
+<portlet:renderURL windowState="normal" var="backURL">
+  <portlet:param name="jspPage" value="/book-portlet/view.jsp"></portlet:param>
+</portlet:renderURL>
+
+
+<liferay-ui:header
+    backURL="<%= backURL %>"
+    title="Back"
+/>
+
+
+
+<aui:form name="fm" method="post">
+	<aui:model-context bean="<%=book%>" model="<%=Book.class%>" />
+	<aui:input name="bookName" label="Book Name"/>
+	<aui:input type="textarea" name="description" label="Description"/>
+	<aui:input name="authorName" label="Author Name"/>
+	<aui:input name="isbn" label="ISBN">
+		 <aui:validator name="digits"/>
+	</aui:input>
+	<aui:input name="price" label="Price">
+		 <aui:validator name="digits"/>
+	</aui:input>
+	<aui:button-row>
+        <aui:button name="updateBook" type="submit" value="Update Book"  />
+    </aui:button-row>
+		
+</aui:form>
+--------------------------------------------------------------------------------------------
+
+Update edit_book.jsp 
+
+<portlet:actionURL name="updateBook" var="updateBookURL" />
+
+<aui:form name="fm" method="post" action="<%= updateBookURL.toString()%>">
+
+------------------------------------------------------
+
+Add new method 
+
+@ProcessAction(name = "updateBook")
+	public void updateBook(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+		Book book = ActionUtil.bookFromRequest(actionRequest);
+
+		BookLocalServiceUtil.updateBook(book);
+		_log.info("#################Updated Book Successfully#########################");
+		
+	}
+	
+-------------------------------------------------------
+
+with this code it creates new record. so update above methods 
+
+@ProcessAction(name = "viewEdit")
+	public void viewEdit(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+		
+		long bookId = ParamUtil.getLong(actionRequest, "bookId",0);
+		Book book = BookLocalServiceUtil.getBook(bookId);
+		actionRequest.setAttribute("book", book); 
+		actionRequest.getPortletSession().setAttribute("bookId",bookId,PortletSession.PORTLET_SCOPE);//this is the update 
+
+		actionResponse.setRenderParameter("jspPage", "/book-portlet/edit_book.jsp");
+	
+			
+	}
+	
+	
+@ProcessAction(name = "updateBook")
+	public void updateBook(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+		Book book = ActionUtil.bookFromRequest(actionRequest);
+		long bookId = (Long) actionRequest.getPortletSession().getAttribute("bookId",PortletSession.PORTLET_SCOPE);
+		book.setBookId(bookId);
+
+		BookLocalServiceUtil.updateBook(book);
+		_log.info("#################Updated Book Successfully#########################");
+		
+	}
+	
+--------------------------------------------------------------------
+
+update actions.jsp
+
+<portlet:actionURL name="deleteBook" var="deleteURL">
+		<portlet:param name="bookId"
+			value="<%=String.valueOf(book.getBookId())%>" />
+	</portlet:actionURL>
+	
+	<liferay-ui:icon-delete url="<%= deleteURL.toString()%>"/>
+
+-------------------------------------------------------------------
+
+add new method 
+
+
+@ProcessAction(name = "deleteBook")
+	public void deleteBook(ActionRequest actionRequest,ActionResponse actionResponse) throws SystemException, PortalException {
+		long bookId = ParamUtil.getLong(actionRequest, "bookId");
+		BookLocalServiceUtil.deleteBook(bookId);
+		_log.info("#################Book Deleted Successfully#########################");
+	}
+
+---------------------------------------------------------------------------	
+
+
+
+
+
