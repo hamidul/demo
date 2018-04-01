@@ -5,7 +5,7 @@
 	<author>Hamidul Islam</author>
 	<namespace>BOOK</namespace>
 	<entity name="Book" table="BOOK_PORTLET" local-service="true" remote-service="true">
-		<column name="bookId" type="long" primary="true" id-type="increment"/>
+		<column name="bookId" type="long" primary="true"/>
 		<column name="bookName" type="String" />
 		<column name="description" type="String" />
 		<column name="authorName" type="String" />
@@ -14,5 +14,16 @@
 		<order by="desc" >
 			<order-column name="bookId"/>
 		</order>
+		
+		<finder name="Isbn" return-type="Book" unique="true">
+            <finder-column name="isbn" />
+        </finder>
+        
+        <finder name="AuthorName" return-type="Collection">
+            <finder-column name="authorName" />
+        </finder>
 	</entity>
+	<exceptions>
+		<exception>DuplicateIsbn</exception>
+	</exceptions>
 </service-builder>

@@ -14,6 +14,11 @@
 
 package com.proliferay.book.service.impl;
 
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
+import com.proliferay.book.exception.DuplicateIsbnException;
+import com.proliferay.book.exception.NoSuchBookException;
+import com.proliferay.book.model.Book;
 import com.proliferay.book.service.base.BookLocalServiceBaseImpl;
 
 /**
@@ -36,4 +41,43 @@ public class BookLocalServiceImpl extends BookLocalServiceBaseImpl {
 	 *
 	 * Never reference this class directly. Always use {@link com.proliferay.book.service.BookLocalServiceUtil} to access the book local service.
 	 */
+	
+	public Book addBook(String bookName, String description, String authorName,int isbn, int price) throws PortalException,SystemException{
+		checkDuplicateIsbn(isbn);
+		long bookId = counterLocalService.increment();
+		Book book = bookPersistence.create(bookId);
+		book.setBookName(bookName);
+		book.setDescription(description);
+		book.setAuthorName(authorName);
+		book.setIsbn(isbn);
+		book.setPrice(price);
+		
+	
+		bookPersistence.updateImpl(book);
+		return book;
+	}
+	
+	public Book updateBook(long bookId,String bookName, String description, String authorName,int isbn, int price) throws PortalException,SystemException{
+		checkDuplicateIsbn(isbn);
+		Book book = getBook(bookId);
+		book.setBookId(bookId);
+		book.setBookName(bookName);
+		book.setDescription(description);
+		book.setAuthorName(authorName);
+		book.setIsbn(isbn);
+		book.setPrice(price);
+		bookPersistence.updateImpl(book); 
+		return book;
+	}
+	
+	protected void checkDuplicateIsbn(int isbn) throws DuplicateIsbnException{
+		 try {
+			Book book = bookPersistence.findByIsbn(isbn);
+			if(book != null){
+				throw new DuplicateIsbnException("Duplicate ISBN Exception"); 
+			}
+		} catch (NoSuchBookException e) {
+
+		}
+	}
 }

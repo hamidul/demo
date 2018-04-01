@@ -5,7 +5,7 @@
 	<import class="com.proliferay.book.model.Book" />
 	<class name="com.proliferay.book.model.impl.BookImpl" table="BOOK_PORTLET">
 		<id name="bookId" type="long">
-			<generator class="increment" />
+			<generator class="assigned" />
 		</id>
 		<property name="bookName" type="com.liferay.portal.dao.orm.hibernate.StringType" />
 		<property name="description" type="com.liferay.portal.dao.orm.hibernate.StringType" />

@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
 import com.liferay.portal.kernel.dao.orm.Query;
+import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.log.Log;
@@ -44,6 +45,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -80,6 +82,748 @@ public class BookPersistenceImpl extends BasePersistenceImpl<Book>
 	public static final FinderPath FINDER_PATH_COUNT_ALL = new FinderPath(BookModelImpl.ENTITY_CACHE_ENABLED,
 			BookModelImpl.FINDER_CACHE_ENABLED, Long.class,
 			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countAll", new String[0]);
+	public static final FinderPath FINDER_PATH_FETCH_BY_ISBN = new FinderPath(BookModelImpl.ENTITY_CACHE_ENABLED,
+			BookModelImpl.FINDER_CACHE_ENABLED, BookImpl.class,
+			FINDER_CLASS_NAME_ENTITY, "fetchByIsbn",
+			new String[] { Integer.class.getName() },
+			BookModelImpl.ISBN_COLUMN_BITMASK);
+	public static final FinderPath FINDER_PATH_COUNT_BY_ISBN = new FinderPath(BookModelImpl.ENTITY_CACHE_ENABLED,
+			BookModelImpl.FINDER_CACHE_ENABLED, Long.class,
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByIsbn",
+			new String[] { Integer.class.getName() });
+
+	/**
+	 * Returns the book where isbn = &#63; or throws a {@link NoSuchBookException} if it could not be found.
+	 *
+	 * @param isbn the isbn
+	 * @return the matching book
+	 * @throws NoSuchBookException if a matching book could not be found
+	 */
+	@Override
+	public Book findByIsbn(int isbn) throws NoSuchBookException {
+		Book book = fetchByIsbn(isbn);
+
+		if (book == null) {
+			StringBundler msg = new StringBundler(4);
+
+			msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			msg.append("isbn=");
+			msg.append(isbn);
+
+			msg.append(StringPool.CLOSE_CURLY_BRACE);
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(msg.toString());
+			}
+
+			throw new NoSuchBookException(msg.toString());
+		}
+
+		return book;
+	}
+
+	/**
+	 * Returns the book where isbn = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param isbn the isbn
+	 * @return the matching book, or <code>null</code> if a matching book could not be found
+	 */
+	@Override
+	public Book fetchByIsbn(int isbn) {
+		return fetchByIsbn(isbn, true);
+	}
+
+	/**
+	 * Returns the book where isbn = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param isbn the isbn
+	 * @param retrieveFromCache whether to retrieve from the finder cache
+	 * @return the matching book, or <code>null</code> if a matching book could not be found
+	 */
+	@Override
+	public Book fetchByIsbn(int isbn, boolean retrieveFromCache) {
+		Object[] finderArgs = new Object[] { isbn };
+
+		Object result = null;
+
+		if (retrieveFromCache) {
+			result = finderCache.getResult(FINDER_PATH_FETCH_BY_ISBN,
+					finderArgs, this);
+		}
+
+		if (result instanceof Book) {
+			Book book = (Book)result;
+
+			if ((isbn != book.getIsbn())) {
+				result = null;
+			}
+		}
+
+		if (result == null) {
+			StringBundler query = new StringBundler(3);
+
+			query.append(_SQL_SELECT_BOOK_WHERE);
+
+			query.append(_FINDER_COLUMN_ISBN_ISBN_2);
+
+			String sql = query.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query q = session.createQuery(sql);
+
+				QueryPos qPos = QueryPos.getInstance(q);
+
+				qPos.add(isbn);
+
+				List<Book> list = q.list();
+
+				if (list.isEmpty()) {
+					finderCache.putResult(FINDER_PATH_FETCH_BY_ISBN,
+						finderArgs, list);
+				}
+				else {
+					Book book = list.get(0);
+
+					result = book;
+
+					cacheResult(book);
+
+					if ((book.getIsbn() != isbn)) {
+						finderCache.putResult(FINDER_PATH_FETCH_BY_ISBN,
+							finderArgs, book);
+					}
+				}
+			}
+			catch (Exception e) {
+				finderCache.removeResult(FINDER_PATH_FETCH_BY_ISBN, finderArgs);
+
+				throw processException(e);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		if (result instanceof List<?>) {
+			return null;
+		}
+		else {
+			return (Book)result;
+		}
+	}
+
+	/**
+	 * Removes the book where isbn = &#63; from the database.
+	 *
+	 * @param isbn the isbn
+	 * @return the book that was removed
+	 */
+	@Override
+	public Book removeByIsbn(int isbn) throws NoSuchBookException {
+		Book book = findByIsbn(isbn);
+
+		return remove(book);
+	}
+
+	/**
+	 * Returns the number of books where isbn = &#63;.
+	 *
+	 * @param isbn the isbn
+	 * @return the number of matching books
+	 */
+	@Override
+	public int countByIsbn(int isbn) {
+		FinderPath finderPath = FINDER_PATH_COUNT_BY_ISBN;
+
+		Object[] finderArgs = new Object[] { isbn };
+
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+
+		if (count == null) {
+			StringBundler query = new StringBundler(2);
+
+			query.append(_SQL_COUNT_BOOK_WHERE);
+
+			query.append(_FINDER_COLUMN_ISBN_ISBN_2);
+
+			String sql = query.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query q = session.createQuery(sql);
+
+				QueryPos qPos = QueryPos.getInstance(q);
+
+				qPos.add(isbn);
+
+				count = (Long)q.uniqueResult();
+
+				finderCache.putResult(finderPath, finderArgs, count);
+			}
+			catch (Exception e) {
+				finderCache.removeResult(finderPath, finderArgs);
+
+				throw processException(e);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return count.intValue();
+	}
+
+	private static final String _FINDER_COLUMN_ISBN_ISBN_2 = "book.isbn = ?";
+	public static final FinderPath FINDER_PATH_WITH_PAGINATION_FIND_BY_AUTHORNAME =
+		new FinderPath(BookModelImpl.ENTITY_CACHE_ENABLED,
+			BookModelImpl.FINDER_CACHE_ENABLED, BookImpl.class,
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByAuthorName",
+			new String[] {
+				String.class.getName(),
+				
+			Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			});
+	public static final FinderPath FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_AUTHORNAME =
+		new FinderPath(BookModelImpl.ENTITY_CACHE_ENABLED,
+			BookModelImpl.FINDER_CACHE_ENABLED, BookImpl.class,
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByAuthorName",
+			new String[] { String.class.getName() },
+			BookModelImpl.AUTHORNAME_COLUMN_BITMASK);
+	public static final FinderPath FINDER_PATH_COUNT_BY_AUTHORNAME = new FinderPath(BookModelImpl.ENTITY_CACHE_ENABLED,
+			BookModelImpl.FINDER_CACHE_ENABLED, Long.class,
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByAuthorName",
+			new String[] { String.class.getName() });
+
+	/**
+	 * Returns all the books where authorName = &#63;.
+	 *
+	 * @param authorName the author name
+	 * @return the matching books
+	 */
+	@Override
+	public List<Book> findByAuthorName(String authorName) {
+		return findByAuthorName(authorName, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the books where authorName = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link BookModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * </p>
+	 *
+	 * @param authorName the author name
+	 * @param start the lower bound of the range of books
+	 * @param end the upper bound of the range of books (not inclusive)
+	 * @return the range of matching books
+	 */
+	@Override
+	public List<Book> findByAuthorName(String authorName, int start, int end) {
+		return findByAuthorName(authorName, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the books where authorName = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link BookModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * </p>
+	 *
+	 * @param authorName the author name
+	 * @param start the lower bound of the range of books
+	 * @param end the upper bound of the range of books (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching books
+	 */
+	@Override
+	public List<Book> findByAuthorName(String authorName, int start, int end,
+		OrderByComparator<Book> orderByComparator) {
+		return findByAuthorName(authorName, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the books where authorName = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link BookModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * </p>
+	 *
+	 * @param authorName the author name
+	 * @param start the lower bound of the range of books
+	 * @param end the upper bound of the range of books (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param retrieveFromCache whether to retrieve from the finder cache
+	 * @return the ordered range of matching books
+	 */
+	@Override
+	public List<Book> findByAuthorName(String authorName, int start, int end,
+		OrderByComparator<Book> orderByComparator, boolean retrieveFromCache) {
+		boolean pagination = true;
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+			pagination = false;
+			finderPath = FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_AUTHORNAME;
+			finderArgs = new Object[] { authorName };
+		}
+		else {
+			finderPath = FINDER_PATH_WITH_PAGINATION_FIND_BY_AUTHORNAME;
+			finderArgs = new Object[] { authorName, start, end, orderByComparator };
+		}
+
+		List<Book> list = null;
+
+		if (retrieveFromCache) {
+			list = (List<Book>)finderCache.getResult(finderPath, finderArgs,
+					this);
+
+			if ((list != null) && !list.isEmpty()) {
+				for (Book book : list) {
+					if (!Objects.equals(authorName, book.getAuthorName())) {
+						list = null;
+
+						break;
+					}
+				}
+			}
+		}
+
+		if (list == null) {
+			StringBundler query = null;
+
+			if (orderByComparator != null) {
+				query = new StringBundler(3 +
+						(orderByComparator.getOrderByFields().length * 2));
+			}
+			else {
+				query = new StringBundler(3);
+			}
+
+			query.append(_SQL_SELECT_BOOK_WHERE);
+
+			boolean bindAuthorName = false;
+
+			if (authorName == null) {
+				query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_1);
+			}
+			else if (authorName.equals(StringPool.BLANK)) {
+				query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_3);
+			}
+			else {
+				bindAuthorName = true;
+
+				query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_2);
+			}
+
+			if (orderByComparator != null) {
+				appendOrderByComparator(query, _ORDER_BY_ENTITY_ALIAS,
+					orderByComparator);
+			}
+			else
+			 if (pagination) {
+				query.append(BookModelImpl.ORDER_BY_JPQL);
+			}
+
+			String sql = query.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query q = session.createQuery(sql);
+
+				QueryPos qPos = QueryPos.getInstance(q);
+
+				if (bindAuthorName) {
+					qPos.add(authorName);
+				}
+
+				if (!pagination) {
+					list = (List<Book>)QueryUtil.list(q, getDialect(), start,
+							end, false);
+
+					Collections.sort(list);
+
+					list = Collections.unmodifiableList(list);
+				}
+				else {
+					list = (List<Book>)QueryUtil.list(q, getDialect(), start,
+							end);
+				}
+
+				cacheResult(list);
+
+				finderCache.putResult(finderPath, finderArgs, list);
+			}
+			catch (Exception e) {
+				finderCache.removeResult(finderPath, finderArgs);
+
+				throw processException(e);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return list;
+	}
+
+	/**
+	 * Returns the first book in the ordered set where authorName = &#63;.
+	 *
+	 * @param authorName the author name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching book
+	 * @throws NoSuchBookException if a matching book could not be found
+	 */
+	@Override
+	public Book findByAuthorName_First(String authorName,
+		OrderByComparator<Book> orderByComparator) throws NoSuchBookException {
+		Book book = fetchByAuthorName_First(authorName, orderByComparator);
+
+		if (book != null) {
+			return book;
+		}
+
+		StringBundler msg = new StringBundler(4);
+
+		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		msg.append("authorName=");
+		msg.append(authorName);
+
+		msg.append(StringPool.CLOSE_CURLY_BRACE);
+
+		throw new NoSuchBookException(msg.toString());
+	}
+
+	/**
+	 * Returns the first book in the ordered set where authorName = &#63;.
+	 *
+	 * @param authorName the author name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching book, or <code>null</code> if a matching book could not be found
+	 */
+	@Override
+	public Book fetchByAuthorName_First(String authorName,
+		OrderByComparator<Book> orderByComparator) {
+		List<Book> list = findByAuthorName(authorName, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last book in the ordered set where authorName = &#63;.
+	 *
+	 * @param authorName the author name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching book
+	 * @throws NoSuchBookException if a matching book could not be found
+	 */
+	@Override
+	public Book findByAuthorName_Last(String authorName,
+		OrderByComparator<Book> orderByComparator) throws NoSuchBookException {
+		Book book = fetchByAuthorName_Last(authorName, orderByComparator);
+
+		if (book != null) {
+			return book;
+		}
+
+		StringBundler msg = new StringBundler(4);
+
+		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		msg.append("authorName=");
+		msg.append(authorName);
+
+		msg.append(StringPool.CLOSE_CURLY_BRACE);
+
+		throw new NoSuchBookException(msg.toString());
+	}
+
+	/**
+	 * Returns the last book in the ordered set where authorName = &#63;.
+	 *
+	 * @param authorName the author name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching book, or <code>null</code> if a matching book could not be found
+	 */
+	@Override
+	public Book fetchByAuthorName_Last(String authorName,
+		OrderByComparator<Book> orderByComparator) {
+		int count = countByAuthorName(authorName);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<Book> list = findByAuthorName(authorName, count - 1, count,
+				orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the books before and after the current book in the ordered set where authorName = &#63;.
+	 *
+	 * @param bookId the primary key of the current book
+	 * @param authorName the author name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next book
+	 * @throws NoSuchBookException if a book with the primary key could not be found
+	 */
+	@Override
+	public Book[] findByAuthorName_PrevAndNext(long bookId, String authorName,
+		OrderByComparator<Book> orderByComparator) throws NoSuchBookException {
+		Book book = findByPrimaryKey(bookId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			Book[] array = new BookImpl[3];
+
+			array[0] = getByAuthorName_PrevAndNext(session, book, authorName,
+					orderByComparator, true);
+
+			array[1] = book;
+
+			array[2] = getByAuthorName_PrevAndNext(session, book, authorName,
+					orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception e) {
+			throw processException(e);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected Book getByAuthorName_PrevAndNext(Session session, Book book,
+		String authorName, OrderByComparator<Book> orderByComparator,
+		boolean previous) {
+		StringBundler query = null;
+
+		if (orderByComparator != null) {
+			query = new StringBundler(4 +
+					(orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			query = new StringBundler(3);
+		}
+
+		query.append(_SQL_SELECT_BOOK_WHERE);
+
+		boolean bindAuthorName = false;
+
+		if (authorName == null) {
+			query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_1);
+		}
+		else if (authorName.equals(StringPool.BLANK)) {
+			query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_3);
+		}
+		else {
+			bindAuthorName = true;
+
+			query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_2);
+		}
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields = orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				query.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				query.append(_ORDER_BY_ENTITY_ALIAS);
+				query.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						query.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						query.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						query.append(WHERE_GREATER_THAN);
+					}
+					else {
+						query.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			query.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				query.append(_ORDER_BY_ENTITY_ALIAS);
+				query.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						query.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						query.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						query.append(ORDER_BY_ASC);
+					}
+					else {
+						query.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			query.append(BookModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = query.toString();
+
+		Query q = session.createQuery(sql);
+
+		q.setFirstResult(0);
+		q.setMaxResults(2);
+
+		QueryPos qPos = QueryPos.getInstance(q);
+
+		if (bindAuthorName) {
+			qPos.add(authorName);
+		}
+
+		if (orderByComparator != null) {
+			Object[] values = orderByComparator.getOrderByConditionValues(book);
+
+			for (Object value : values) {
+				qPos.add(value);
+			}
+		}
+
+		List<Book> list = q.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the books where authorName = &#63; from the database.
+	 *
+	 * @param authorName the author name
+	 */
+	@Override
+	public void removeByAuthorName(String authorName) {
+		for (Book book : findByAuthorName(authorName, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null)) {
+			remove(book);
+		}
+	}
+
+	/**
+	 * Returns the number of books where authorName = &#63;.
+	 *
+	 * @param authorName the author name
+	 * @return the number of matching books
+	 */
+	@Override
+	public int countByAuthorName(String authorName) {
+		FinderPath finderPath = FINDER_PATH_COUNT_BY_AUTHORNAME;
+
+		Object[] finderArgs = new Object[] { authorName };
+
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+
+		if (count == null) {
+			StringBundler query = new StringBundler(2);
+
+			query.append(_SQL_COUNT_BOOK_WHERE);
+
+			boolean bindAuthorName = false;
+
+			if (authorName == null) {
+				query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_1);
+			}
+			else if (authorName.equals(StringPool.BLANK)) {
+				query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_3);
+			}
+			else {
+				bindAuthorName = true;
+
+				query.append(_FINDER_COLUMN_AUTHORNAME_AUTHORNAME_2);
+			}
+
+			String sql = query.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query q = session.createQuery(sql);
+
+				QueryPos qPos = QueryPos.getInstance(q);
+
+				if (bindAuthorName) {
+					qPos.add(authorName);
+				}
+
+				count = (Long)q.uniqueResult();
+
+				finderCache.putResult(finderPath, finderArgs, count);
+			}
+			catch (Exception e) {
+				finderCache.removeResult(finderPath, finderArgs);
+
+				throw processException(e);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return count.intValue();
+	}
+
+	private static final String _FINDER_COLUMN_AUTHORNAME_AUTHORNAME_1 = "book.authorName IS NULL";
+	private static final String _FINDER_COLUMN_AUTHORNAME_AUTHORNAME_2 = "book.authorName = ?";
+	private static final String _FINDER_COLUMN_AUTHORNAME_AUTHORNAME_3 = "(book.authorName IS NULL OR book.authorName = '')";
 
 	public BookPersistenceImpl() {
 		setModelClass(Book.class);
@@ -94,6 +838,9 @@ public class BookPersistenceImpl extends BasePersistenceImpl<Book>
 	public void cacheResult(Book book) {
 		entityCache.putResult(BookModelImpl.ENTITY_CACHE_ENABLED,
 			BookImpl.class, book.getPrimaryKey(), book);
+
+		finderCache.putResult(FINDER_PATH_FETCH_BY_ISBN,
+			new Object[] { book.getIsbn() }, book);
 
 		book.resetOriginalValues();
 	}
@@ -146,6 +893,8 @@ public class BookPersistenceImpl extends BasePersistenceImpl<Book>
 
 		finderCache.clearCache(FINDER_CLASS_NAME_LIST_WITH_PAGINATION);
 		finderCache.clearCache(FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION);
+
+		clearUniqueFindersCache((BookModelImpl)book, true);
 	}
 
 	@Override
@@ -156,6 +905,35 @@ public class BookPersistenceImpl extends BasePersistenceImpl<Book>
 		for (Book book : books) {
 			entityCache.removeResult(BookModelImpl.ENTITY_CACHE_ENABLED,
 				BookImpl.class, book.getPrimaryKey());
+
+			clearUniqueFindersCache((BookModelImpl)book, true);
+		}
+	}
+
+	protected void cacheUniqueFindersCache(BookModelImpl bookModelImpl) {
+		Object[] args = new Object[] { bookModelImpl.getIsbn() };
+
+		finderCache.putResult(FINDER_PATH_COUNT_BY_ISBN, args, Long.valueOf(1),
+			false);
+		finderCache.putResult(FINDER_PATH_FETCH_BY_ISBN, args, bookModelImpl,
+			false);
+	}
+
+	protected void clearUniqueFindersCache(BookModelImpl bookModelImpl,
+		boolean clearCurrent) {
+		if (clearCurrent) {
+			Object[] args = new Object[] { bookModelImpl.getIsbn() };
+
+			finderCache.removeResult(FINDER_PATH_COUNT_BY_ISBN, args);
+			finderCache.removeResult(FINDER_PATH_FETCH_BY_ISBN, args);
+		}
+
+		if ((bookModelImpl.getColumnBitmask() &
+				FINDER_PATH_FETCH_BY_ISBN.getColumnBitmask()) != 0) {
+			Object[] args = new Object[] { bookModelImpl.getOriginalIsbn() };
+
+			finderCache.removeResult(FINDER_PATH_COUNT_BY_ISBN, args);
+			finderCache.removeResult(FINDER_PATH_FETCH_BY_ISBN, args);
 		}
 	}
 
@@ -262,6 +1040,8 @@ public class BookPersistenceImpl extends BasePersistenceImpl<Book>
 
 		boolean isNew = book.isNew();
 
+		BookModelImpl bookModelImpl = (BookModelImpl)book;
+
 		Session session = null;
 
 		try {
@@ -285,14 +1065,46 @@ public class BookPersistenceImpl extends BasePersistenceImpl<Book>
 
 		finderCache.clearCache(FINDER_CLASS_NAME_LIST_WITH_PAGINATION);
 
-		if (isNew) {
+		if (!BookModelImpl.COLUMN_BITMASK_ENABLED) {
+			finderCache.clearCache(FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION);
+		}
+		else
+		 if (isNew) {
+			Object[] args = new Object[] { bookModelImpl.getAuthorName() };
+
+			finderCache.removeResult(FINDER_PATH_COUNT_BY_AUTHORNAME, args);
+			finderCache.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_AUTHORNAME,
+				args);
+
 			finderCache.removeResult(FINDER_PATH_COUNT_ALL, FINDER_ARGS_EMPTY);
 			finderCache.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_ALL,
 				FINDER_ARGS_EMPTY);
 		}
 
+		else {
+			if ((bookModelImpl.getColumnBitmask() &
+					FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_AUTHORNAME.getColumnBitmask()) != 0) {
+				Object[] args = new Object[] {
+						bookModelImpl.getOriginalAuthorName()
+					};
+
+				finderCache.removeResult(FINDER_PATH_COUNT_BY_AUTHORNAME, args);
+				finderCache.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_AUTHORNAME,
+					args);
+
+				args = new Object[] { bookModelImpl.getAuthorName() };
+
+				finderCache.removeResult(FINDER_PATH_COUNT_BY_AUTHORNAME, args);
+				finderCache.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_AUTHORNAME,
+					args);
+			}
+		}
+
 		entityCache.putResult(BookModelImpl.ENTITY_CACHE_ENABLED,
 			BookImpl.class, book.getPrimaryKey(), book, false);
+
+		clearUniqueFindersCache(bookModelImpl, false);
+		cacheUniqueFindersCache(bookModelImpl);
 
 		book.resetOriginalValues();
 
@@ -721,8 +1533,11 @@ public class BookPersistenceImpl extends BasePersistenceImpl<Book>
 	protected FinderCache finderCache;
 	private static final String _SQL_SELECT_BOOK = "SELECT book FROM Book book";
 	private static final String _SQL_SELECT_BOOK_WHERE_PKS_IN = "SELECT book FROM Book book WHERE bookId IN (";
+	private static final String _SQL_SELECT_BOOK_WHERE = "SELECT book FROM Book book WHERE ";
 	private static final String _SQL_COUNT_BOOK = "SELECT COUNT(book) FROM Book book";
+	private static final String _SQL_COUNT_BOOK_WHERE = "SELECT COUNT(book) FROM Book book WHERE ";
 	private static final String _ORDER_BY_ENTITY_ALIAS = "book.";
 	private static final String _NO_SUCH_ENTITY_WITH_PRIMARY_KEY = "No Book exists with the primary key ";
+	private static final String _NO_SUCH_ENTITY_WITH_KEY = "No Book exists with the key {";
 	private static final Log _log = LogFactoryUtil.getLog(BookPersistenceImpl.class);
 }

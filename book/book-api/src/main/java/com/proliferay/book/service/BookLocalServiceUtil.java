@@ -79,6 +79,15 @@ public class BookLocalServiceUtil {
 		return getService().addBook(book);
 	}
 
+	public static com.proliferay.book.model.Book addBook(
+		java.lang.String bookName, java.lang.String description,
+		java.lang.String authorName, int isbn, int price)
+		throws com.liferay.portal.kernel.exception.PortalException,
+			com.liferay.portal.kernel.exception.SystemException {
+		return getService()
+				   .addBook(bookName, description, authorName, isbn, price);
+	}
+
 	/**
 	* Creates a new book with the primary key. Does not add the book to the database.
 	*
@@ -137,6 +146,15 @@ public class BookLocalServiceUtil {
 	public static com.proliferay.book.model.Book updateBook(
 		com.proliferay.book.model.Book book) {
 		return getService().updateBook(book);
+	}
+
+	public static com.proliferay.book.model.Book updateBook(long bookId,
+		java.lang.String bookName, java.lang.String description,
+		java.lang.String authorName, int isbn, int price)
+		throws com.liferay.portal.kernel.exception.PortalException {
+		return getService()
+				   .updateBook(bookId, bookName, description, authorName, isbn,
+			price);
 	}
 
 	/**

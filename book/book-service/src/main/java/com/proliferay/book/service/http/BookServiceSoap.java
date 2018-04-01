@@ -16,9 +16,16 @@ package com.proliferay.book.service.http;
 
 import aQute.bnd.annotation.ProviderType;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+
+import com.proliferay.book.service.BookServiceUtil;
+
+import java.rmi.RemoteException;
+
 /**
  * Provides the SOAP utility for the
- * {@link com.proliferay.book.service.BookServiceUtil} service utility. The
+ * {@link BookServiceUtil} service utility. The
  * static methods of this class calls the same methods of the service utility.
  * However, the signatures are different because it is difficult for SOAP to
  * support certain types.
@@ -53,9 +60,27 @@ import aQute.bnd.annotation.ProviderType;
  * @author Hamidul Islam
  * @see BookServiceHttp
  * @see com.proliferay.book.model.BookSoap
- * @see com.proliferay.book.service.BookServiceUtil
+ * @see BookServiceUtil
  * @generated
  */
 @ProviderType
 public class BookServiceSoap {
+	public static com.proliferay.book.model.BookSoap addBook(
+		java.lang.String bookName, java.lang.String description,
+		java.lang.String authorName, int isbn, int price)
+		throws RemoteException {
+		try {
+			com.proliferay.book.model.Book returnValue = BookServiceUtil.addBook(bookName,
+					description, authorName, isbn, price);
+
+			return com.proliferay.book.model.BookSoap.toSoapModel(returnValue);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	private static Log _log = LogFactoryUtil.getLog(BookServiceSoap.class);
 }

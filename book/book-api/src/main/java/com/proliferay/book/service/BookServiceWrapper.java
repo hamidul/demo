@@ -32,6 +32,16 @@ public class BookServiceWrapper implements BookService,
 		_bookService = bookService;
 	}
 
+	@Override
+	public com.proliferay.book.model.Book addBook(java.lang.String bookName,
+		java.lang.String description, java.lang.String authorName, int isbn,
+		int price)
+		throws com.liferay.portal.kernel.exception.PortalException,
+			com.liferay.portal.kernel.exception.SystemException {
+		return _bookService.addBook(bookName, description, authorName, isbn,
+			price);
+	}
+
 	/**
 	* Returns the OSGi service identifier.
 	*

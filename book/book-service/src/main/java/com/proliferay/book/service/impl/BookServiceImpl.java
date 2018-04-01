@@ -14,6 +14,11 @@
 
 package com.proliferay.book.service.impl;
 
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
+import com.proliferay.book.exception.DuplicateIsbnException;
+import com.proliferay.book.exception.NoSuchBookException;
+import com.proliferay.book.model.Book;
 import com.proliferay.book.service.base.BookServiceBaseImpl;
 
 /**
@@ -36,4 +41,13 @@ public class BookServiceImpl extends BookServiceBaseImpl {
 	 *
 	 * Never reference this class directly. Always use {@link com.proliferay.book.service.BookServiceUtil} to access the book remote service.
 	 */
+	
+	public Book addBook(String bookName, String description, String authorName,int isbn, int price) throws PortalException,SystemException{
+	
+	
+		return bookLocalService.addBook(bookName, description, authorName, isbn, price);
+		
+	}
+	
+	
 }

@@ -41,6 +41,14 @@ public class BookServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to {@link com.proliferay.book.service.impl.BookServiceImpl} and rerun ServiceBuilder to regenerate this class.
 	 */
+	public static com.proliferay.book.model.Book addBook(
+		java.lang.String bookName, java.lang.String description,
+		java.lang.String authorName, int isbn, int price)
+		throws com.liferay.portal.kernel.exception.PortalException,
+			com.liferay.portal.kernel.exception.SystemException {
+		return getService()
+				   .addBook(bookName, description, authorName, isbn, price);
+	}
 
 	/**
 	* Returns the OSGi service identifier.

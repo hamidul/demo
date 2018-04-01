@@ -96,7 +96,12 @@ public class BookModelImpl extends BaseModelImpl<Book> implements BookModel {
 	public static final boolean FINDER_CACHE_ENABLED = GetterUtil.getBoolean(com.proliferay.book.service.util.ServiceProps.get(
 				"value.object.finder.cache.enabled.com.proliferay.book.model.Book"),
 			true);
-	public static final boolean COLUMN_BITMASK_ENABLED = false;
+	public static final boolean COLUMN_BITMASK_ENABLED = GetterUtil.getBoolean(com.proliferay.book.service.util.ServiceProps.get(
+				"value.object.column.bitmask.enabled.com.proliferay.book.model.Book"),
+			true);
+	public static final long AUTHORNAME_COLUMN_BITMASK = 1L;
+	public static final long ISBN_COLUMN_BITMASK = 2L;
+	public static final long BOOKID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * Converts the soap model instance into a normal model instance.
@@ -241,6 +246,8 @@ public class BookModelImpl extends BaseModelImpl<Book> implements BookModel {
 
 	@Override
 	public void setBookId(long bookId) {
+		_columnBitmask = -1L;
+
 		_bookId = bookId;
 	}
 
@@ -289,7 +296,17 @@ public class BookModelImpl extends BaseModelImpl<Book> implements BookModel {
 
 	@Override
 	public void setAuthorName(String authorName) {
+		_columnBitmask |= AUTHORNAME_COLUMN_BITMASK;
+
+		if (_originalAuthorName == null) {
+			_originalAuthorName = _authorName;
+		}
+
 		_authorName = authorName;
+	}
+
+	public String getOriginalAuthorName() {
+		return GetterUtil.getString(_originalAuthorName);
 	}
 
 	@JSON
@@ -300,7 +317,19 @@ public class BookModelImpl extends BaseModelImpl<Book> implements BookModel {
 
 	@Override
 	public void setIsbn(int isbn) {
+		_columnBitmask |= ISBN_COLUMN_BITMASK;
+
+		if (!_setOriginalIsbn) {
+			_setOriginalIsbn = true;
+
+			_originalIsbn = _isbn;
+		}
+
 		_isbn = isbn;
+	}
+
+	public int getOriginalIsbn() {
+		return _originalIsbn;
 	}
 
 	@JSON
@@ -312,6 +341,10 @@ public class BookModelImpl extends BaseModelImpl<Book> implements BookModel {
 	@Override
 	public void setPrice(int price) {
 		_price = price;
+	}
+
+	public long getColumnBitmask() {
+		return _columnBitmask;
 	}
 
 	@Override
@@ -415,6 +448,15 @@ public class BookModelImpl extends BaseModelImpl<Book> implements BookModel {
 
 	@Override
 	public void resetOriginalValues() {
+		BookModelImpl bookModelImpl = this;
+
+		bookModelImpl._originalAuthorName = bookModelImpl._authorName;
+
+		bookModelImpl._originalIsbn = bookModelImpl._isbn;
+
+		bookModelImpl._setOriginalIsbn = false;
+
+		bookModelImpl._columnBitmask = 0;
 	}
 
 	@Override
@@ -521,7 +563,11 @@ public class BookModelImpl extends BaseModelImpl<Book> implements BookModel {
 	private String _bookName;
 	private String _description;
 	private String _authorName;
+	private String _originalAuthorName;
 	private int _isbn;
+	private int _originalIsbn;
+	private boolean _setOriginalIsbn;
 	private int _price;
+	private long _columnBitmask;
 	private Book _escapedModel;
 }

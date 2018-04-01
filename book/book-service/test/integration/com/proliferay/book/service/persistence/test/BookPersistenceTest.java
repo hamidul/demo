@@ -22,12 +22,14 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -143,6 +145,22 @@ public class BookPersistenceTest {
 			newBook.getAuthorName());
 		Assert.assertEquals(existingBook.getIsbn(), newBook.getIsbn());
 		Assert.assertEquals(existingBook.getPrice(), newBook.getPrice());
+	}
+
+	@Test
+	public void testCountByIsbn() throws Exception {
+		_persistence.countByIsbn(RandomTestUtil.nextInt());
+
+		_persistence.countByIsbn(0);
+	}
+
+	@Test
+	public void testCountByAuthorName() throws Exception {
+		_persistence.countByAuthorName(StringPool.BLANK);
+
+		_persistence.countByAuthorName(StringPool.NULL);
+
+		_persistence.countByAuthorName((String)null);
 	}
 
 	@Test
@@ -359,6 +377,19 @@ public class BookPersistenceTest {
 		List<Object> result = _persistence.findWithDynamicQuery(dynamicQuery);
 
 		Assert.assertEquals(0, result.size());
+	}
+
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		Book newBook = addBook();
+
+		_persistence.clearCache();
+
+		Book existingBook = _persistence.findByPrimaryKey(newBook.getPrimaryKey());
+
+		Assert.assertEquals(Integer.valueOf(existingBook.getIsbn()),
+			ReflectionTestUtil.<Integer>invoke(existingBook, "getOriginalIsbn",
+				new Class<?>[0]));
 	}
 
 	protected Book addBook() throws Exception {

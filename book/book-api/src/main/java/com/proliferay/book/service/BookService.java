@@ -25,6 +25,8 @@ import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Transactional;
 
+import com.proliferay.book.model.Book;
+
 /**
  * Provides the remote service interface for Book. Methods of this
  * service are expected to have security checks based on the propagated JAAS
@@ -49,6 +51,9 @@ public interface BookService extends BaseService {
 	 *
 	 * Never modify or reference this interface directly. Always use {@link BookServiceUtil} to access the book remote service. Add custom service methods to {@link com.proliferay.book.service.impl.BookServiceImpl} and rerun ServiceBuilder to automatically copy the method declarations to this interface.
 	 */
+	public Book addBook(java.lang.String bookName,
+		java.lang.String description, java.lang.String authorName, int isbn,
+		int price) throws PortalException, SystemException;
 
 	/**
 	* Returns the OSGi service identifier.

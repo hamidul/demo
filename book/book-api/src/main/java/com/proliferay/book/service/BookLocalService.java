@@ -89,6 +89,10 @@ public interface BookLocalService extends BaseLocalService,
 	@Indexable(type = IndexableType.REINDEX)
 	public Book addBook(Book book);
 
+	public Book addBook(java.lang.String bookName,
+		java.lang.String description, java.lang.String authorName, int isbn,
+		int price) throws PortalException, SystemException;
+
 	/**
 	* Creates a new book with the primary key. Does not add the book to the database.
 	*
@@ -137,6 +141,10 @@ public interface BookLocalService extends BaseLocalService,
 	*/
 	@Indexable(type = IndexableType.REINDEX)
 	public Book updateBook(Book book);
+
+	public Book updateBook(long bookId, java.lang.String bookName,
+		java.lang.String description, java.lang.String authorName, int isbn,
+		int price) throws PortalException;
 
 	/**
 	* Returns the number of books.
