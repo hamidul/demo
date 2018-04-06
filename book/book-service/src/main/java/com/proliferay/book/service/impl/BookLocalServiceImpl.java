@@ -58,8 +58,13 @@ public class BookLocalServiceImpl extends BookLocalServiceBaseImpl {
 	}
 	
 	public Book updateBook(long bookId,String bookName, String description, String authorName,int isbn, int price) throws PortalException,SystemException{
-		checkDuplicateIsbn(isbn);
+		
 		Book book = getBook(bookId);
+		
+		if(book.getIsbn() != isbn){
+			checkDuplicateIsbn(isbn);
+		}
+		
 		book.setBookId(bookId);
 		book.setBookName(bookName);
 		book.setDescription(description);

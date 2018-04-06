@@ -19,6 +19,14 @@
 
 <liferay-ui:error exception="<%= DuplicateIsbnException.class %>" message="duplicate-isbn-exception" />
 
+
+
+<liferay-ui:success key="add-book" message="add-book-success-message"/>
+
+<liferay-ui:success key="update-book" message="update-book-success-message"/>
+
+<liferay-ui:success key="delete-book" message="delete-book-success-message"/>
+
 <liferay-ui:search-container total="<%=bookCount %>" delta="5" deltaConfigurable="<%= true %>" iteratorURL="<%= iteratorURL %>">
 	<liferay-ui:search-container-results 
 		results="<%= BookLocalServiceUtil.getBooks(searchContainer.getStart(), searchContainer.getEnd()) %>" 

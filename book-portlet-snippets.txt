@@ -739,6 +739,61 @@ change view.jsp as below to support pagination
 
 </liferay-ui:search-container>
 ------------------------------------------------------------------------------------------------------
+To disable default success message add below in the portlet class 
+
+"javax.portlet.init-param.add-process-action-success-action=false"
+
+@Component(
+		 immediate = true, 
+		 property = { 
+			"com.liferay.portlet.display-category=Pro Liferay",
+			"com.liferay.portlet.instanceable=true",
+			"javax.portlet.display-name=Book Portlet",
+			"javax.portlet.init-param.template-path=/",
+			"javax.portlet.init-param.view-template=/book-portlet/view.jsp",
+			"javax.portlet.name=" + BookPortletKeys.Book,
+			"javax.portlet.resource-bundle=content.Language",
+			"javax.portlet.security-role-ref=power-user,user",
+			"javax.portlet.init-param.add-process-action-success-action=false"
+		}, 
+		service = Portlet.class
+)
+--------------------------------------------------------
+
+
+Add below in addBook method 
+
+
+SessionMessages.add(actionRequest,"add-book");
+
+Add below in view.jsp 
+<liferay-ui:success key="add-book" message="add-book-success-message"/>
+
+Add below in language properties 
+
+add-book-success-message=Book Added Successfully
+
+----------------------------------------------------------
+similarly for update and delete book
+
+SessionMessages.add(actionRequest,"update-book");
+SessionMessages.add(actionRequest,"delete-book");
+
+<liferay-ui:success key="update-book" message="update-book-success-message"/>
+
+<liferay-ui:success key="delete-book" message="delete-book-success-message"/>
+
+update-book-success-message=Book Updated Successfully 
+delete-book-success-message= Book Deleted Successfully 
+-----------------------------------------------------------
+Disable default error message for add and update method 
+
+SessionMessages.add(actionRequest, PortalUtil.getPortletId(actionRequest) + SessionMessages.KEY_SUFFIX_HIDE_DEFAULT_ERROR_MESSAGE);
+
+SessionMessages.add(actionRequest, PortalUtil.getPortletId(actionRequest) + SessionMessages.KEY_SUFFIX_HIDE_DEFAULT_ERROR_MESSAGE);
+-----------------------------------------
+
+
         
 
 
