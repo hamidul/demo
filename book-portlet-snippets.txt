@@ -792,6 +792,7 @@ SessionMessages.add(actionRequest, PortalUtil.getPortletId(actionRequest) + Sess
 
 SessionMessages.add(actionRequest, PortalUtil.getPortletId(actionRequest) + SessionMessages.KEY_SUFFIX_HIDE_DEFAULT_ERROR_MESSAGE);
 -----------------------------------------
+hhh
 
 
         
